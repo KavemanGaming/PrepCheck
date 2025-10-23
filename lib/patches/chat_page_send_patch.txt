@@ -1,0 +1,71 @@
+// --- BEGIN PATCH: safe text send ---
+Future<void> _send() async {
+  if (_isSending == true) return;
+
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not signed in')),
+      );
+    }
+    return;
+  }
+  final uid = user.uid;
+
+  // TODO: adapt this to however you store the current chat id
+  // e.g., final chatId = widget.chatId;
+  final chatId = widget.chatId; // <----- ensure this exists in your widget/state
+
+  if (chatId == null) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No chat selected')),
+      );
+    }
+    return;
+  }
+
+  final text = _textCtrl.text.trim();
+  if (text.isEmpty) {
+    return; // nothing to send
+  }
+
+  setState(() => _isSending = true);
+  final db = FirebaseFirestore.instance;
+  final chatRef = db.collection('chats').doc(chatId);
+
+  try {
+    // Ensure membership per Firestore rules.
+    await chatRef.update({'members': FieldValue.arrayUnion([uid])});
+
+    // Build message payload.
+    final payload = <String, dynamic>{
+      'uid': uid,                        // REQUIRED by rules (or authorUid / userId)
+      'text': text,
+      'type': 'text',
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    await chatRef.collection('messages').add(payload);
+
+    _textCtrl.clear();
+  } on FirebaseException catch (e) {
+    debugPrint('Send failed: ${e.code}: ${e.message}');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Send failed: ${e.code}')),
+      );
+    }
+  } catch (e) {
+    debugPrint('Send error: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Send error')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isSending = false);
+  }
+}
+// --- END PATCH ---

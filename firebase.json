@@ -1,0 +1,3 @@
+
+
+{"firestore":{"rules":"firestore.rules"},"storage":{"bucket": "prepcheck-f0f18.firebasestorage.app","rules":"storage.rules"},"functions":{"source":"functions"},"flutter":{"platforms":{"android":{"default":{"projectId":"prepcheck-f0f18","appId":"1:940912900661:android:6cf54ce3769d6d5df1cf7c","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"prepcheck-f0f18","configurations":{"android":"1:940912900661:android:6cf54ce3769d6d5df1cf7c"}}}}}}

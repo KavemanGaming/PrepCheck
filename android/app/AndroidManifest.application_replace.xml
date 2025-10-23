@@ -1,0 +1,9 @@
+
+<!-- Replace the PlayStore split application with the standard Flutter application
+     if you do NOT use deferred components. Keep your existing meta-data/activity. -->
+<application
+    android:name="io.flutter.app.FlutterApplication"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name">
+    <!-- ... your existing content ... -->
+</application>

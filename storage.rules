@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isAdmin() {
+      return signedIn() && get(/databases/(default)/documents/users/$(uid())).data.isAdmin == true;
+    }
+    function isChatMember(chatId) {
+      return signedIn() &&
+             exists(/databases/(default)/documents/chats/$(chatId)) &&
+             (uid() in get(/databases/(default)/documents/chats/$(chatId)).data.members);
+    }
+
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if signedIn() && userId == uid();
+    }
+
+    match /chats/{chatId}/{allPaths=**} {
+      allow read, write: if isChatMember(chatId);
+    }
+
+    match /inventory/{listId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

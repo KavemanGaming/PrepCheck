@@ -1,0 +1,6 @@
+// 1) Add this import near your other imports:
+// import 'bootstrap/release_appcheck.dart';
+
+// 2) After: await Firebase.initializeApp(...);
+//    insert:
+// await activateAppCheck();

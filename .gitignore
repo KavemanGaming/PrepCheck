@@ -1,0 +1,10 @@
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+android/local.properties
+**/google-services.json
+**/GoogleService-Info.plist
+lib/firebase_options.dart

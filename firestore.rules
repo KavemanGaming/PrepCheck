@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isAdmin() {
+      return signedIn() && get(/databases/$(database)/documents/users/$(uid())).data.isAdmin == true;
+    }
+
+    // Settings
+    match /settings/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Users + tokens
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && userId == uid();
+      allow update: if isAdmin() || (signedIn() && userId == uid());
+      allow delete: if isAdmin();
+
+      match /fcmTokens/{tokenId} {
+        allow read: if isAdmin() || (signedIn() && userId == uid());
+        allow create, update, delete: if signedIn() && userId == uid();
+      }
+    }
+
+    // Inventory (camelCase + snake_case)
+    match /inventoryLists/{listId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+      match /items/{itemId} {
+        allow read: if signedIn();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (signedIn() &&
+          resource.data.diff(request.resource.data).changedKeys().hasOnly(['qoh','updatedAt','updatedBy']));
+      }
+    }
+    match /inventory_lists/{listId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+      match /items/{itemId} {
+        allow read: if signedIn();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (signedIn() &&
+          resource.data.diff(request.resource.data).changedKeys().hasOnly(['qoh','updatedAt','updatedBy']));
+      }
+    }
+
+    // Prep (camelCase + snake_case)
+    match /prepLists/{listId} {
+      allow read: if signedIn();
+      allow create, delete, update: if isAdmin();
+      match /items/{itemId} {
+        allow read: if signedIn();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (signedIn() &&
+          resource.data.diff(request.resource.data).changedKeys().hasOnly(['done','completedAt','completedBy']));
+      }
+    }
+    match /prep_lists/{listId} {
+      allow read: if signedIn();
+      allow create, delete, update: if isAdmin();
+      match /items/{itemId} {
+        allow read: if signedIn();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || (signedIn() &&
+          resource.data.diff(request.resource.data).changedKeys().hasOnly(['done','completedAt','completedBy']));
+      }
+    }
+
+    // Chats + self-join on members only
+    match /chats/{chatId} {
+      // Members can read chat doc
+      allow read: if signedIn() && (request.auth.uid in resource.data.members);
+
+      // Admins manage chat docs; users may "self-join" by adding ONLY their uid to members
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        signedIn() &&
+        // Only 'members' may change
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['members']) &&
+        // New members list must be a superset of existing members
+        request.resource.data.members.hasAll(resource.data.members) &&
+        // It can add at most one new entry
+        request.resource.data.members.size() <= resource.data.members.size() + 1 &&
+        // The new list must include the caller
+        request.resource.data.members.hasAny([request.auth.uid])
+      );
+
+      match /messages/{msgId} {
+        function isMember() {
+          return signedIn() &&
+            (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members);
+        }
+
+        allow read: if isMember();
+
+        // Allow create if member and author field matches
+        allow create: if isMember() && (
+          request.resource.data.uid == uid() ||
+          request.resource.data.authorUid == uid() ||
+          request.resource.data.userId == uid()
+        );
+
+        // Sender or admin can delete
+        allow delete: if isAdmin() ||
+          (signedIn() && (
+            resource.data.uid == uid() ||
+            resource.data.authorUid == uid() ||
+            resource.data.userId == uid()
+          ));
+
+        allow update: if false;
+      }
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
