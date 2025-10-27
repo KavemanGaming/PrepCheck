@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'order_preview_page.dart';
 
@@ -31,7 +31,7 @@ class _InventoryPageState extends State<InventoryPage> {
                   icon: const Icon(Icons.shopping_cart_checkout_outlined),
                   onPressed: () {
                     Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => OrderPreviewPage(listRef: listsCol.doc(_listId!)),
+                      builder: (_) => OrderPreviewPage(listId: _listId!),
                     ));
                   },
                 )
@@ -79,7 +79,7 @@ class _InventoryPageState extends State<InventoryPage> {
               Expanded(
                 child: _listId == null
                     ? const Center(child: Text('No lists. Tap Add list.'))
-                    : _Items(listRef: listsCol.doc(_listId!)),
+                    : _Items(listRef: FirebaseFirestore.instance.collection('lists').doc(_listId!)),
               ),
             ],
           ),
@@ -220,3 +220,9 @@ class _Items extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+

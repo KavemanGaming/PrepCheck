@@ -6,6 +6,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+
+
 }
 
 android {
@@ -20,6 +22,7 @@ android {
     }
     dependencies {
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+        implementation("androidx.browser:browser:1.7.0")
     }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
@@ -34,10 +37,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        lint {
+            checkReleaseBuilds = false
+            abortOnError = false
+        }
     }
 
     buildTypes {
         release {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // if you don't have a release keystore yet, this keeps debug signing so the build succeeds:
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

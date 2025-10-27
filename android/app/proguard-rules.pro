@@ -12,5 +12,17 @@
 -keep class androidx.work.** { *; }
 -dontwarn org.bouncycastle.**
 
+# Keep Google Play Core (SplitInstall) and tasks
+-keep class com.google.android.play.** { *; }
+-keep class com.google.android.play.core.** { *; }
+-keep class com.google.android.play.core.splitinstall.** { *; }
+-keep class com.google.android.play.core.tasks.** { *; }
+-dontwarn com.google.android.play.**
+-dontwarn com.google.android.play.core.**
+
+# Keep Flutter deferred components classes
+-keep class io.flutter.embedding.engine.deferredcomponents.** { *; }
+-keep class io.flutter.embedding.android.FlutterPlayStoreSplitApplication { *; }
+
 # Gson / Kotlin reflect (commonly used by Firebase)
 -keepattributes Signature, InnerClasses, EnclosingMethod, RuntimeVisibleAnnotations, AnnotationDefault
