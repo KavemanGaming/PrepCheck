@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: prepcheck_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres" 
+          --health-interval=5s 
+          --health-timeout=5s 
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @prepcheck/db generate
+
+      - name: Prepare test database
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/prepcheck_ci
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" > packages/db/.env
+          pnpm --filter @prepcheck/db migrate:deploy
+          pnpm --filter @prepcheck/db seed
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/prepcheck_ci
+          TEST_AUTH: headers
+        run: pnpm test
